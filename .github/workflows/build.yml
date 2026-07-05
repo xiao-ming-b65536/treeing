@@ -1,0 +1,202 @@
+name: Build
+
+# Build English-release binaries for Windows / Linux / macOS ARM / macOS x86
+# and attach them to the GitHub Release for the tag that triggered this run.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g. 1.0.0, without the v prefix)'
+        required: true
+        default: '1.0.0'
+
+jobs:
+  build:
+    name: package (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
+    # macos-15-intel (x86_64) runners are scarcer than ARM; allow it to fail without blocking the others.
+    continue-on-error: ${{ matrix.platform == 'macos-x86_64' }}
+    env:
+      # Windows runners default stdout to cp1252; force UTF-8 so the English strings print consistently.
+      PYTHONUTF8: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+          - os: ubuntu-latest
+            platform: linux
+          # Pin macos-15 (not macos-latest) so arm64 artifacts stay compatible with macOS 11+.
+          - os: macos-15
+            platform: macos-arm64
+          # The only x86_64 macOS runner currently available (through 2027-08).
+          - os: macos-15-intel
+            platform: macos-x86_64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Tk and xvfb (Linux GUI)
+        if: matrix.platform == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y python3-tk xvfb
+
+      - name: Install build dependencies
+        run: pip install -r requirements-build.txt
+
+      - name: Build CLI and GUI
+        run: python build.py --target all
+
+      - name: Verify artifact sizes
+        shell: bash
+        run: |
+          set -euo pipefail
+          MIN=100000
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            cli=dist/windows/treeing-cli.exe
+            gui=dist/windows/treeing-gui.exe
+          else
+            cli=dist/${{ matrix.platform }}/treeing-cli
+            gui=dist/${{ matrix.platform }}/treeing-gui
+          fi
+          test -f "$cli"
+          test -f "$gui"
+          test "$(wc -c < "$cli")" -ge "$MIN"
+          test "$(wc -c < "$gui")" -ge "$MIN"
+
+      - name: Smoke test CLI
+        shell: bash
+        run: |
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            dist/windows/treeing-cli.exe --help
+          else
+            dist/${{ matrix.platform }}/treeing-cli --help
+          fi
+
+      - name: Smoke test GUI (Linux xvfb)
+        if: matrix.platform == 'linux'
+        run: xvfb-run -a timeout 8 dist/linux/treeing-gui || test $? -eq 124
+
+      - name: Smoke test GUI (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath dist/windows/treeing-gui.exe -PassThru
+          Start-Sleep -Seconds 5
+          if ($p.HasExited) {
+            throw "treeing-gui exited early with code $($p.ExitCode)"
+          }
+          Stop-Process -Id $p.Id -Force
+
+      - name: Smoke test GUI (macOS)
+        if: startsWith(matrix.platform, 'macos')
+        run: |
+          dist/${{ matrix.platform }}/treeing-gui &
+          GUI_PID=$!
+          sleep 8
+          if kill -0 $GUI_PID 2>/dev/null; then
+            kill $GUI_PID
+            wait $GUI_PID 2>/dev/null || true
+          else
+            echo "treeing-gui exited early"
+            exit 1
+          fi
+
+      - name: Compute version string
+        id: ver
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            V="${{ github.event.inputs.version }}"
+          else
+            V="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$V" >> $GITHUB_OUTPUT
+          echo "tag=v$V" >> $GITHUB_OUTPUT
+
+      - name: Package artifacts
+        shell: bash
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          mkdir -p staging
+          if [ "${{ matrix.platform }}" = "windows" ]; then
+            7z a "staging/treeing-cli-windows-v${VERSION}.zip"  dist/windows/treeing-cli.exe
+            7z a "staging/treeing-gui-windows-v${VERSION}.zip"  dist/windows/treeing-gui.exe
+          else
+            tar -czf "staging/treeing-cli-${{ matrix.platform }}-v${VERSION}.tar.gz" -C dist/${{ matrix.platform }} treeing-cli
+            tar -czf "staging/treeing-gui-${{ matrix.platform }}-v${VERSION}.tar.gz" -C dist/${{ matrix.platform }} treeing-gui
+          fi
+          ls -la staging/
+
+      - name: Build wheel and sdist
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          pip install build
+          # Avoid `python -m build`: build.py in the current directory shadows the build package;
+          # use the pyproject-build entry point provided by the build package instead.
+          pyproject-build --wheel --sdist --outdir staging .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artifacts-${{ matrix.platform }}
+          path: staging/*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: always() && needs.build.result == 'success'
+    steps:
+      - name: Compute version string
+        id: ver
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            V="${{ github.event.inputs.version }}"
+          else
+            V="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$V" >> $GITHUB_OUTPUT
+          echo "tag=v$V" >> $GITHUB_OUTPUT
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate SHA256SUMS
+        shell: bash
+        run: |
+          cd artifacts
+          find . -type f \( -name '*.zip' -o -name '*.tar.gz' -o -name '*.whl' -o -name '*.tar.gz' \) -print0 \
+            | sort -z | xargs -0 sha256sum > SHA256SUMS.txt
+          echo "=== SHA256SUMS.txt ==="
+          cat SHA256SUMS.txt
+          echo "=== artifacts list ==="
+          ls -la
+
+      - name: Create release bundle
+        shell: bash
+        run: |
+          mkdir -p release-bundle
+          cp artifacts/* release-bundle/
+          ls -la release-bundle/
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: ${{ steps.ver.outputs.tag }}
+          generate_release_notes: true
+          files: release-bundle/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

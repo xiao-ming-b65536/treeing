@@ -13,15 +13,9 @@ build/
 dist/
 *.spec
 
-# Test / coverage
-.pytest_cache/
-.coverage
-htmlcov/
-
 # IDE / OS
 .idea/
 .vscode/
-.cursor/
 *.swp
 Thumbs.db
 .DS_Store

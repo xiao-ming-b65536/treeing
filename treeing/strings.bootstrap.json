@@ -1,0 +1,7 @@
+{
+  "config_err_missing": "Could not find config file strings.json: {path}",
+  "config_err_invalid_json": "strings.json has invalid JSON: {path} ({error})",
+  "config_err_read": "Could not read config file strings.json: {path} ({error})",
+  "config_err_not_object": "strings.json root must be a JSON object: {path}",
+  "config_err_bootstrap_missing": "Could not load the bootstrap strings file strings.bootstrap.json: {path}"
+}
