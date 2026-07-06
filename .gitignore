@@ -19,7 +19,19 @@ dist/
 *.swp
 Thumbs.db
 .DS_Store
-.cursor/rules/git-remote.mdc
+.cursor/
+
+# Python tooling / build metadata
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.egg-info/
+.eggs/
+*.egg
+pip-wheel-metadata/
 
 # Environment / secrets
 .env
