@@ -1,6 +1,6 @@
 [project]
 name = "treeing"
-version = "1.0.0"
+version = "1.0.1"
 description = "ASCII tree → directory/file generator"
 readme = "README.md"
 license = "MIT"
@@ -8,9 +8,35 @@ requires-python = ">=3.11"
 authors = [
     {name = "MING"},
 ]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Environment :: X11 Applications",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Utilities",
+]
+dependencies = []
+
+[project.scripts]
+treeing = "treeing.cli.main:cli_main"
+treeing-gui = "treeing.gui_entry:run_gui"
 
 [project.urls]
 Homepage = "https://github.com/xiao-ming-b65536/treeing"
+Source = "https://github.com/xiao-ming-b65536/treeing"
+"Issue Tracker" = "https://github.com/xiao-ming-b65536/treeing/issues"
+Changelog = "https://github.com/xiao-ming-b65536/treeing/blob/main/CHANGELOG.md"
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["treeing", "treeing.cli", "treeing.core", "treeing.gui", "treeing.assets"]

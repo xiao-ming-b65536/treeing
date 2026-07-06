@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version number (e.g. 1.0.0, without the v prefix)'
+        description: 'Version number (e.g. 1.0.1, without the v prefix)'
         required: true
-        default: '1.0.0'
+        default: '1.0.1'
       publish:
         description: 'Publish / update the GitHub Release for this version. Leave unchecked to build and stage artifacts without touching any release.'
         type: boolean
@@ -148,12 +148,23 @@ jobs:
           pip install build
           # Avoid `python -m build`: build.py in the current directory shadows the build package;
           # use the pyproject-build entry point provided by the build package instead.
-          pyproject-build --wheel --sdist --outdir staging .
+          # Output to a separate pypi/ dir so the wheel/sdist stay distinct from the
+          # platform binary tarballs in staging/ (avoids accidentally uploading a Linux
+          # binary as an sdist to PyPI).
+          pyproject-build --wheel --sdist --outdir pypi .
 
       - uses: actions/upload-artifact@v6
         with:
           name: artifacts-${{ matrix.platform }}
           path: staging/*
+          if-no-files-found: error
+
+      - name: Upload PyPI distributions
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v6
+        with:
+          name: artifacts-pypi
+          path: pypi/*
           if-no-files-found: error
 
   release:
@@ -211,3 +222,26 @@ jobs:
           files: release-bundle/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    # Publish to PyPI only on real tag pushes. PyPI rejects re-uploading a
+    # version, so manual dispatches never trigger this (use a new tag instead).
+    if: always() && needs.build.result == 'success' && github.event_name == 'push'
+    environment:
+      name: pypi
+      url: https://pypi.org/p/treeing
+    permissions:
+      id-token: write  # trusted publishing (OIDC); no API token needed
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: artifacts-pypi
+          path: dist
+          merge-multiple: true
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist

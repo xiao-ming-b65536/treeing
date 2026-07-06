@@ -18,6 +18,16 @@ Turn directory-tree text (e.g. output from the `tree` command) into real folders
 
 ## Quick start
 
+### Install from PyPI
+
+```bash
+pip install treeing
+treeing -i tree.txt -o ./out   # CLI
+treeing-gui                    # GUI
+```
+
+The CLI needs only the Python standard library. The GUI uses `tkinter`; on Linux install it with `sudo apt-get install python3-tk` (it ships with Python on Windows and macOS).
+
 ### Run from source
 
 ```bash
