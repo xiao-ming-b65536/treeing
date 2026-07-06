@@ -190,8 +190,10 @@ python build.py --target all          # builds both CLI and GUI
 
 Treeing is a fully local, offline tool. It does not connect to the network, upload anything, or collect personal data. It only stores UI preferences (font size, last output directory, import encoding) under `~/.treeing/settings.json` in your home directory, to restore them on the next launch. Delete that file at any time to reset to defaults.
 
+Full policy: [PRIVACY.md](../PRIVACY.md).
+
 ---
 
 ## 7. Licence
 
-MIT — see [LICENSE](../LICENSE) in the repository root.
+MIT — see [LICENSE](../LICENSE) in the repository root. Terms of Use: [TERMS.md](../TERMS.md).

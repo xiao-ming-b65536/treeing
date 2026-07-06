@@ -49,6 +49,12 @@ python build.py --target all          # outputs to dist/<platform>/
 
 See [docs/USER_GUIDE.md](docs/USER_GUIDE.md) for a unified guide covering source runs and prebuilt executables on Windows, macOS ARM, macOS x86, and Linux.
 
-## Licence
+## Legal
 
-MIT — see [LICENSE](LICENSE).
+- **Licence** — MIT; see [LICENSE](LICENSE).
+- **Privacy Policy** — see [PRIVACY.md](PRIVACY.md).
+- **Terms of Use** — see [TERMS.md](TERMS.md).
+
+## AI Disclosure
+
+Parts of this source code were written with assistance from AI coding tools.
