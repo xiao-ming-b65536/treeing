@@ -11,6 +11,11 @@ on:
         description: 'Version number (e.g. 1.0.0, without the v prefix)'
         required: true
         default: '1.0.0'
+      publish:
+        description: 'Publish / update the GitHub Release for this version. Leave unchecked to build and stage artifacts without touching any release.'
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   build:
@@ -154,7 +159,11 @@ jobs:
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: always() && needs.build.result == 'success'
+    # Tag pushes always publish. A manual workflow_dispatch only publishes when
+    # the publish input is explicitly set, so a stray dispatch with the default
+    # version can't silently overwrite an already-released version's assets
+    # (PyInstaller binaries aren't bit-reproducible).
+    if: always() && needs.build.result == 'success' && (github.event_name == 'push' || github.event.inputs.publish == 'true')
     permissions:
       contents: write
     steps:
