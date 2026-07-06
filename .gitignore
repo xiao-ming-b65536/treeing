@@ -19,6 +19,7 @@ dist/
 *.swp
 Thumbs.db
 .DS_Store
+.cursor/rules/git-remote.mdc
 
 # Environment / secrets
 .env
