@@ -17,6 +17,9 @@ on:
         required: false
         default: false
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: package (${{ matrix.platform }})
