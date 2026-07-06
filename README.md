@@ -10,6 +10,12 @@ Turn directory-tree text (e.g. output from the `tree` command) into real folders
 - Cross-platform: Windows, macOS, Linux.
 - User-visible strings live in `treeing/strings.json` (bootstrap errors in `treeing/strings.bootstrap.json`).
 
+## Preview
+
+![Treeing GUI](docs/screenshots/gui_en.png)
+
+> Screenshot: Windows, English UI, parsing a sample project tree.
+
 ## Quick start
 
 ### Run from source
