@@ -26,7 +26,16 @@ python -m treeing.main --help                # CLI help
 
 ### Run a prebuilt executable
 
-Prebuilt binaries are attached to each [release](https://github.com/xiao-ming-b65536/treeing/releases) (Windows, Linux, macOS ARM, macOS x86).
+Prebuilt binaries are attached to each [release](https://github.com/xiao-ming-b65536/treeing/releases) (Windows, Linux, macOS ARM, macOS x86). Pick the archive for your platform (replace `vX.Y.Z` with the actual version):
+
+| Platform | Archives |
+|---|---|
+| Windows | `treeing-cli-windows-vX.Y.Z.zip`, `treeing-gui-windows-vX.Y.Z.zip` |
+| Linux | `treeing-cli-linux-vX.Y.Z.tar.gz`, `treeing-gui-linux-vX.Y.Z.tar.gz` |
+| macOS (Apple Silicon) | `treeing-cli-macos-arm64-vX.Y.Z.tar.gz`, `treeing-gui-macos-arm64-vX.Y.Z.tar.gz` |
+| macOS (Intel) | `treeing-cli-macos-x86_64-vX.Y.Z.tar.gz`, `treeing-gui-macos-x86_64-vX.Y.Z.tar.gz` |
+
+CLI and GUI are packaged separately; download whichever you need. Verify against `SHA256SUMS.txt` in the same release.
 
 ```bash
 treeing-gui                           # GUI — Linux / macOS
